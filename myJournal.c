@@ -21,41 +21,63 @@ int main() {
 
     // Create Journal folder
     char path[250];
+    char plannerPath[250];
     const char *homeDir = getenv("HOME");
     snprintf(path, sizeof(path), "%s/Journal", homeDir);
+    snprintf(plannerPath, sizeof(plannerPath), "%s/Journal", homeDir);
     createDirectory(path);
 
     // temp var for parsing strings
-    char temp[12];
+    char temp[20];
 
     // Create Year folder
     snprintf(temp, sizeof(path), "/%04d", tm.tm_year + 1900);
     strcat(path, temp);
+    strcat(plannerPath, temp);
     createDirectory(path);
     temp[0] = '\0';
 
     // Create Day folder
     snprintf(temp, sizeof(path), "/%02d", tm.tm_mon + 1);
     strcat(path, temp);
+    strcat(plannerPath, temp);
     createDirectory(path);
     temp[0] = '\0';
 
-    // Create file
-    snprintf(temp, sizeof(path), "/%02d%s", tm.tm_mday, ".txt");
+    // Create journal file
+    snprintf(temp, sizeof(temp), "/%02d%s", tm.tm_mday, ".txt");
     strcat(path, temp);
+    temp[0] = '\0';
 
-    // Open the file in append mode, which creates the file if it does not exist
-    FILE *file = fopen(path, "a");
-    if (file == NULL) {
+    FILE *journalFile = fopen(path, "a");
+    if (journalFile == NULL) {
         perror("Error opening file");
         return errno;
     }
+    fclose(journalFile);
 
-    // Close the file
-    fclose(file);
+    // Create planner file
+    snprintf(temp, sizeof(temp), "/%02dPlanner%s", tm.tm_mday, ".txt");
+    strcat(plannerPath, temp);
+    temp[0] = '\0';
 
-    char command[256];
-    snprintf(command, sizeof(command), "nvim %s", path);
+    FILE *plannerFile = fopen(plannerPath, "a+");
+    if (plannerFile == NULL) {
+        perror("Error opening file");
+        return errno;
+    }
+    fseek(plannerFile, 0, SEEK_END); // Move the file pointer to the end of the file
+    long fileSize = ftell(plannerFile); // Get the current file pointer position, which represents the file size
+    if (fileSize == 0) {
+        // Write sequence of numbers starting at 6 with two empty lines between each
+        for (int i = 6; i <= 22; ++i) { // You can change the end value as needed
+            fprintf(plannerFile, "%d\n\n\n", i);
+        }
+    }
+    fclose(plannerFile);
+
+    char command[800];
+    snprintf(command, sizeof(command), "nvim -O %s %s", path, plannerPath);
 
     // Execute the command
     int status = system(command);
